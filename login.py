@@ -12,7 +12,7 @@ class WeiboLogin():
         self.option = Options()
         self.option.add_argument("--headless")
         self.option.add_argument("--disable-gpu")
-        self.browser = webdriver.Firefox(options=self.option)
+        self.browser = webdriver.Firefox()
         self.browser.set_window_size(1050,840)
         self.wait = WebDriverWait(self.browser,20)
         self.username = username
@@ -31,30 +31,40 @@ class WeiboLogin():
         username.send_keys(self.username)
         password.send_keys(self.password)
         submit.click()
-    def run(self):
+    def getCookies(self):
         '''
         破解入口
         :return:
         '''
         self.open()
-        print("开始等待10秒")
-        time.sleep(10)  # 等待10秒
-        print('页面标题',self.browser.title)
-        if "验证" in self.browser.title:
-            # print(self.browser)
-            print('当前页面的url',self.browser.current_url)
+
+        try:
+            WebDriverWait(self.browser,30).until(
+                EC.presence_of_element_located((By.CLASS_NAME,"geetest_radar_tip"))
+            )
+            print('当前页面的url', self.browser.current_url)
             f_test = self.browser.find_element_by_id('message-p')
-            print("f_test",f_test.text)
-            check_input = self.browser.find_element_by_class_name('geetest_radar_btn')
-            print(check_input)
+            print("f_test", f_test.text)
+            check_input = self.browser.find_element_by_class_name('geetest_radar_tip')
             check_input.click() # 点击
-        WebDriverWait(self.browser,30).until(
-            EC.title_is("微博")
-        )
-        cookies = self.browser.get_cookies()
-        cookie = [item["name"] + "=" + item["value"] for item in cookies]
-        cookie_str = '; '.join(item for item in cookie)
-        self.browser.quit()
+            print("按钮点击验证完成")
+        except Exception as e:
+            print("验证失败")
+            print(e)
+
+        try:
+            WebDriverWait(self.browser,30).until(
+                EC.title_is("微博")
+            )
+
+            cookies = self.browser.get_cookies()
+            print(cookies)
+            cookie = [item["name"] + "=" + item["value"] for item in cookies]
+            cookie_str = '; '.join(item for item in cookie)
+            self.browser.quit()
+        except Exception as e:
+            print("获取cooie失败")
+            print(e)
         return cookie_str
 
 if __name__ == '__main__':
@@ -63,5 +73,3 @@ if __name__ == '__main__':
     cookie_str = loginer.run()
     print('获取cookie成功')
     print('Cookie:', cookie_str)
-    # except Exception as e:
-    #     print(e)
