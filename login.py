@@ -3,6 +3,7 @@ from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from bs4 import BeautifulSoup
 import time
 
 class WeiboLogin():
@@ -17,6 +18,10 @@ class WeiboLogin():
         self.wait = WebDriverWait(self.browser,20)
         self.username = username
         self.password = password
+        self.uids = ['1743951792']  # 美国大使馆的uid
+        self.ids = ['usembassy'] # 美国驻华大使馆的id
+
+        self.id_url = 'http://weibo.cn/'
         print("初始化完成")
 
     def open(self):
@@ -61,15 +66,49 @@ class WeiboLogin():
             print(cookies)
             cookie = [item["name"] + "=" + item["value"] for item in cookies]
             cookie_str = '; '.join(item for item in cookie)
-            self.browser.quit()
+            # self.browser.quit()
         except Exception as e:
             print("获取cooie失败")
             print(e)
         return cookie_str
 
+    def getUserInfoAndWeibo(self):
+        for id in self.ids:
+            id_url = self.id_url+id
+            print(id_url)
+            self.browser.get(id_url)
+            try:
+                WebDriverWait(self.browser,3).until(
+                    EC.title_is("美国驻华大使馆的微博")
+                )
+                # 使用BeautifulSoup解析网页的HTML
+                soup = BeautifulSoup(self.browser.page_source,'lxml')
+                # 爬取最大页码数目
+                pageSize = soup.find('div', attrs={'id': 'pagelist'})
+                pageSize = pageSize.find('div').getText()
+                pageSize = (pageSize.split('/')[1]).split('页')[0]
+
+                # 爬取微博数量
+                divMessage = soup.find('div', attrs={'class': 'tip2'})
+                weiBoCount = divMessage.find('span').getText()
+                weiBoCount = (weiBoCount.split('[')[1]).replace(']', '')
+                # 爬取微博数量
+                divMessage = soup.find('div', attrs={'class': 'tip2'})
+                weiBoCount = divMessage.find('span').getText()
+                weiBoCount = (weiBoCount.split('[')[1]).replace(']', '')
+                # 爬取关注数量和粉丝数量
+                a = divMessage.find_all('a')[:2]
+                guanZhuCount = (a[0].getText().split('[')[1]).replace(']', '')
+                fenSiCount = (a[1].getText().split('[')[1]).replace(']', '')
+                print("最大页码 {} 微博数量 {} 粉丝数量 {} 关注数量 {}".format(pageSize,weiBoCount, fenSiCount, guanZhuCount))
+
+            except Exception as e:
+                print("抓取id为：{} 的信息失败".format(id))
+
 if __name__ == '__main__':
     # try:
     loginer = WeiboLogin()
-    cookie_str = loginer.run()
-    print('获取cookie成功')
-    print('Cookie:', cookie_str)
+    cookie_str = loginer.getCookies()
+    # print('获取cookie成功')
+    # print('Cookie:', cookie_str)
+    loginer.getUserInfoAndWeibo()
