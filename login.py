@@ -104,7 +104,7 @@ class WeiboLogin():
             guanZhuCount = (a[0].getText().split('[')[1]).replace(']', '')
             fenSiCount = (a[1].getText().split('[')[1]).replace(']', '')
             print("最大页码 {} 微博数量 {} 粉丝数量 {} 关注数量 {}".format(pageSize, weiBoCount, fenSiCount, guanZhuCount))
-
+            count = 0
             for page_index in range(1, int(pageSize)):
                 page_url = self.page_url.format(id, page_index)
                 print('page_url', page_url)
@@ -115,15 +115,31 @@ class WeiboLogin():
                 body = soup.find('body')
                 # 具体的数值可通过页面查看
                 div_all = body.find_all_next('div', attrs={'class': 'c'})[1:-2]
-                for divs in div_all:
+                for divs in div_all:    # 当前微博的divs包含了很多div
                     # yuanChuang : 0表示转发，1表示原创
                     yuanChuang = '1'  # 初始值为原创，当非原创时，更改此值
                     div = divs.find_all("div")
-
+                    content=dianZhan= zhuanFa= pinLun= laiYuan= faBuTime = ""
                     if len(div) == 1:  # 原创无图
                         pass
+                        # content = div[0].find("span", attrs={'class': 'ctt'}).getText()
+                        # aa = div[0].find_all('a')
+                        # for a in aa:
+                        #     text = a.getText()
+                        #     if "赞" in text:
+                        #         dianZhan = (text.split('[')[1]).replace(']', '')
+                        #     elif ('转发' in text):
+                        #         zhuanFa = (text.split('[')[1]).replace(']', '')
+                        #     elif ('评论' in text):
+                        #         pinLun = (text.split('[')[1]).replace(']', '')
+                        # # 获取来源和时间
+                        # span = divs.find("span",attrs={'class':"ct"}).getText()
+                        # span_split = span.split("来自")
+                        # faBuTime = str(span_split[0])
+                        # laiYuan = span_split[1] if len(span_split) == 2 else "无"
                     elif len(div) == 2:  # 原创有图
                         content = div[0].find('span', attrs={'class': 'ctt'}).getText()
+                        # print("内容: ",content)
                         aa = div[1].find_all('a')
                         for a in aa:
                             text = a.getText()
@@ -135,18 +151,41 @@ class WeiboLogin():
                                 pinLun = (text.split('[')[1]).replace(']', '')
                         # 获取来源和时间
                         span = divs.find('span', attrs={'class': "ct"}).getText()
-                        print('原创有图 span',span)
+                        # print('原创有图 span',span)
                         span_split = span.split("来自")
-                        print(span.split("来自"))
+                        # print(span.split("来自"))
 
                         faBuTime = str(span_split[0])
-                        # laiYuan = span.split("来自")[1]
                         laiYuan = span_split[1] if len(span_split) == 2 else "无"
 
                     elif len(div) == 3:  # 转发
                         pass
-
-                print("微博内容 {} \n 赞 {} 转发 {} 评论 {}".format(content, dianZhan, zhuanFa, pinLun))
+                        # yuanChuang = '0'
+                        # content = div[0].find('span',attrs={'class':'ctt'}).getText()
+                        # aa = div[2].find_all('a')
+                        # for a in aa:
+                        #     text = a.getText()
+                        #     if "赞" in text:
+                        #         dianZhan = (text.split('[')[1]).replace(']', '')
+                        #     elif "转发" in text:
+                        #         zhuanFa = (text.split('[')[1]).replace(']', '')
+                        #     elif "评论" in text:
+                        #         pinLun = (text.split('[')[1]).replace(']', '')
+                        # # 获取来源和时间
+                        # span = divs.find("span",attrs={'class':"ct"}).getText()
+                        # span_split = span.split("来自")
+                        # faBuTime = str(span_split[0])
+                        # laiYuan = span_split[1] if len(span_split) == 2 else "无"
+                    print("微博内容 {} \n 赞 {} 转发 {} 评论 {} 来源 {} 时间 {}".
+                          format(content, dianZhan, zhuanFa, pinLun,laiYuan,faBuTime,))
+                    print()
+                # if " 全文" in content:
+                #     print("fuck")
+                #     count += 1
+                #     if count == 2:
+                #         break
+                # if page_index == 2:
+                break
 
         # except Exception as e:
         #     print("抓取id为：{} 的信息失败".format(id))
