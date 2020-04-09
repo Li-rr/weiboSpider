@@ -5,6 +5,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 import time
+import sys
 
 
 class WeiboLogin():
@@ -138,6 +139,14 @@ class WeiboLogin():
                         # faBuTime = str(span_split[0])
                         # laiYuan = span_split[1] if len(span_split) == 2 else "无"
                     elif len(div) == 2:  # 原创有图
+                        content_elem = div[0].find('span', attrs={'class': 'ctt'})  # 获取内容元素
+                        full_text_a_elem = content_elem.find('a') #   获取全文元素
+                        try:
+                            f_url = full_text_a_elem.get("href")
+                            print("+++",full_text_a_elem.get("href"))
+                            self.getFullContent(f_url)
+                        except Exception as e:
+                            print("获取全文微博失败")
                         content = div[0].find('span', attrs={'class': 'ctt'}).getText()
                         # print("内容: ",content)
                         aa = div[1].find_all('a')
@@ -176,8 +185,8 @@ class WeiboLogin():
                         # span_split = span.split("来自")
                         # faBuTime = str(span_split[0])
                         # laiYuan = span_split[1] if len(span_split) == 2 else "无"
-                    print("微博内容 {} \n 赞 {} 转发 {} 评论 {} 来源 {} 时间 {}".
-                          format(content, dianZhan, zhuanFa, pinLun,laiYuan,faBuTime,))
+                    # print("微博内容 {} \n 赞 {} 转发 {} 评论 {} 来源 {} 时间 {}".
+                    #       format(content, dianZhan, zhuanFa, pinLun,laiYuan,faBuTime,))
                     print()
                 # if " 全文" in content:
                 #     print("fuck")
@@ -191,6 +200,33 @@ class WeiboLogin():
         #     print("抓取id为：{} 的信息失败".format(id))
         #     self.browser.quit()
         #     print(e)
+
+    def getFullContent(self,spec_url):
+        '''
+        获取微博全文
+        :param spec_url: 指定微博的url
+        :return:
+        '''
+        print("进入获取全文函数")
+        f_url = self.id_url+spec_url
+        print('拼接后的url',f_url)
+        self.browser.get(f_url)
+        try:
+            WebDriverWait(self.browser,3).until(
+                EC.title_is("评论列表")
+            )
+            c_soup = BeautifulSoup(self.browser.page_source, 'lxml')
+            c_content_divs = c_soup.find('div', attrs={'id': 'M_'})
+            c_content_elem = c_content_divs.find('span', attrs={"class": "ctt"})  # 获取内容元素
+            print("全文内容", c_content_elem.getText())
+            print('div lens', len(c_content_divs))
+            # print(c_content_divs[0])
+            print("离开获取全文函数")
+            return c_content_elem.getText()
+        except Exception as e:
+            print("在getfull函数中失败",e)
+
+        # sys.exit(0)
 
 
 if __name__ == '__main__':
