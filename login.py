@@ -143,7 +143,7 @@ class WeiboLogin():
                         full_text_a_elem = content_elem.find('a') #   获取全文元素
                         try:
                             f_url = full_text_a_elem.get("href")
-                            print("+++",full_text_a_elem.get("href"))
+                            print("获取全文链接",full_text_a_elem.get("href"))
                             self.getFullContent(f_url)
                         except Exception as e:
                             print("获取全文微博失败")
