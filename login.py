@@ -21,10 +21,14 @@ class WeiboLogin():
         self.username = username
         self.password = password
         self.uids = ['1743951792']  # 美国大使馆的uid
+        self.uid = ""
         self.ids = ['usembassy']  # 美国驻华大使馆的id
+        self.follow_url = ""    # 关注的人
+        self.fans_url = ""  # 关注他的人
 
         self.id_url = 'http://weibo.cn/'
         self.page_url = 'http://weibo.cn/{}?page={}'
+        self.follow_url = 'http://weibo.cn/{}/follow?page={}'   # 分别由uid和page填充
         print("初始化完成")
 
     def open(self):
@@ -87,6 +91,14 @@ class WeiboLogin():
             )
             # 使用BeautifulSoup解析网页的HTML
             soup = BeautifulSoup(self.browser.page_source, 'lxml')
+
+            # 获取uid
+            uid = soup.find('td', attrs={'valign': 'top'})
+            uid = uid.a['href']
+            uid = uid.split('/')[1]
+            self.uid = uid
+
+
             # 爬取最大页码数目
             pageSize = soup.find('div', attrs={'id': 'pagelist'})
             pageSize = pageSize.find('div').getText()
@@ -96,6 +108,20 @@ class WeiboLogin():
             divMessage = soup.find('div', attrs={'class': 'tip2'})
             weiBoCount = divMessage.find('span').getText()
             weiBoCount = (weiBoCount.split('[')[1]).replace(']', '')
+
+            aa = divMessage.find_all('a')
+            for a in aa:
+                a_text = a.getText()
+                print(a_text,type(a_text))
+                if "关注" in a_text:
+                    self.follow_url = self.id_url + a.get("href")
+                    print(self.follow_url)
+                elif "粉丝" in a_text:
+                    self.fans_url = self.id_url + a.get("href")
+                    print(self.fans_url)
+            # 爬取关注与粉丝
+            self.getFollowAndFans()
+
             # 爬取微博数量
             divMessage = soup.find('div', attrs={'class': 'tip2'})
             weiBoCount = divMessage.find('span').getText()
@@ -107,6 +133,7 @@ class WeiboLogin():
             print("最大页码 {} 微博数量 {} 粉丝数量 {} 关注数量 {}".format(pageSize, weiBoCount, fenSiCount, guanZhuCount))
             count = 0
             for page_index in range(1, int(pageSize)):
+                break
                 page_url = self.page_url.format(id, page_index)
                 print('page_url', page_url)
                 self.browser.get(page_url)
@@ -156,18 +183,9 @@ class WeiboLogin():
                     print("微博ID {} 微博内容 {} \n 赞 {} 转发 {} 评论 {} 来源 {} 时间 {}".
                           format(weibo_id,content, dianZhan, zhuanFa, pinLun,laiYuan,faBuTime,))
                     print()
-                # if " 全文" in content:
-                #     print("fuck")
-                #     count += 1
-                #     if count == 2:
-                #         break
-                # if page_index == 2:
+
                 break
 
-        # except Exception as e:
-        #     print("抓取id为：{} 的信息失败".format(id))
-        #     self.browser.quit()
-        #     print(e)
 
     def getFullContent(self,spec_url):
         '''
@@ -196,6 +214,43 @@ class WeiboLogin():
 
         # sys.exit(0)
 
+    def getFollowAndFans(self):
+        print("进入获取follow函数")
+        self.browser.get(self.follow_url)   # 打开follow页面
+
+        WebDriverWait(self.browser,3).until(
+            EC.title_is("美国驻华大使馆关注的人")
+        )
+        soup = BeautifulSoup(self.browser.page_source,'lxml')
+        # 获取follow页码
+        pageSize = soup.find('div',attrs={"id":"pagelist"})
+        pageSize = pageSize.find('div').getText()
+        pageSize = pageSize.split("/")[1].split('页')[0]
+        print(pageSize)
+
+        for page_index in range(1,int(pageSize)+1):
+            follow_page_url = self.follow_url.format(self.uid,page_index)
+            print("follow_page",follow_page_url)
+            self.browser.get(follow_page_url)
+            time.sleep(1)
+            # 使用BeautifulSoup解析网页的HTML
+            soup = BeautifulSoup(self.browser.page_source, 'lxml')
+            body = soup.find('body')
+            table_all = body.find_all_next('table')
+            for table in table_all:
+                print(type(table))
+                # print(table)
+                need_content = table.find("td",attrs={"valign":"top"})
+                print(need_content)
+                for fuck  in need_content:
+                    print(fuck)
+                # aa = need_content.find_all("a")
+                # for a in aa:
+                #     print(a)
+                print(need_content.getText())
+                break
+            break
+        print("离开获取follow函数")
 
 if __name__ == '__main__':
     # try:
