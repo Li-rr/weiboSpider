@@ -121,100 +121,38 @@ class WeiboLogin():
                     yuanChuang = '1'  # 初始值为原创，当非原创时，更改此值
                     div = divs.find_all("div")
                     content=dianZhan= zhuanFa= pinLun= laiYuan= faBuTime = ""
-                    if len(div) == 1:  # 原创无图
-                        content_elem = div[0].find('span', attrs={'class': 'ctt'})  # 获取内容元素
-                        print("该条微博ID",div[0].parent.get("id"))
-                        full_url = None
-                        for full_url in content_elem: pass
-                        for full_url in content_elem: pass
-                        if len(full_url.string) == 2:
-                            # print("full_url",full_url.get("href"),full_url.string,type(full_url))
-                            try:
-                                f_url = full_url.get("href")
-                                # print("---------输出 f_url节点")
-                                # print(f_url)
-                                # print("---------输出f_url节点完毕")
-                                # print("获取全文链接",f_url)
-                                content =  self.getFullContent(f_url)
-                            except Exception as e:
-                                print("获取全文微博失败")
-                        else:
-                            content = div[0].find('span', attrs={'class': 'ctt'}).getText()
 
-                        aa = div[0].find_all('a')
-                        for a in aa:
-                            text = a.getText()
-                            if "赞" in text:
-                                dianZhan = (text.split('[')[1]).replace(']', '')
-                            elif ('转发' in text):
-                                zhuanFa = (text.split('[')[1]).replace(']', '')
-                            elif ('评论' in text):
-                                pinLun = (text.split('[')[1]).replace(']', '')
-                        # 获取来源和时间
-                        span = divs.find("span",attrs={'class':"ct"}).getText()
-                        span_split = span.split("来自")
-                        faBuTime = str(span_split[0])
-                        laiYuan = span_split[1] if len(span_split) == 2 else "无"
-                    elif len(div) == 2:  # 原创有图
-                        content_elem = div[0].find('span', attrs={'class': 'ctt'})  # 获取内容元素
-                        print("该条微博ID", div[0].parent.get("id"))
-                        # print("content_elem的大小",len(content_elem))
-                        # print("查看内容")
-                        # for cur_cont in content_elem:
-                        #     print('==',cur_cont)
-                        full_url = None
-                        for full_url in content_elem: pass
-                        if len(full_url.string) == 2:
-                            # print("full_url",full_url.get("href"),full_url.string,type(full_url))
-                            try:
-                                f_url = full_url.get("href")
-                                # print("---------输出 f_url节点")
-                                # print(f_url)
-                                # print("---------输出f_url节点完毕")
-                                # print("获取全文链接",f_url)
-                                content =  self.getFullContent(f_url)
-                            except Exception as e:
-                                print("获取全文微博失败")
-                        else:
-                            content = div[0].find('span', attrs={'class': 'ctt'}).getText()
-                        # print("内容: ",content)
-                        aa = div[1].find_all('a')
-                        for a in aa:
-                            text = a.getText()
-                            if "赞" in text:
-                                dianZhan = (text.split('[')[1]).replace(']', '')
-                            elif ('转发' in text):
-                                zhuanFa = (text.split('[')[1]).replace(']', '')
-                            elif ('评论' in text):
-                                pinLun = (text.split('[')[1]).replace(']', '')
-                        # 获取来源和时间
-                        span = divs.find('span', attrs={'class': "ct"}).getText()
-                        # print('原创有图 span',span)
-                        span_split = span.split("来自")
-                        # print(span.split("来自"))
+                    # 优化代码逻辑
+                    div_num = len(div)  # 0为原创无图，1为原创有图，2为转载
+                    print("该条微博ID", div[0].parent.get("id"))    # 通过获取父元素来获取id
+                    content_elem = div[0].find('span', attrs={'class': 'ctt'})  # 获取内容元素
+                    full_url = None # 如果有全文链接，则用来保存全文链接
+                    for full_url in content_elem: pass
+                    if len(full_url.string) == 2:
+                        try:
+                            f_url = full_url.get("href")
+                            content = self.getFullContent(f_url)
+                        except Exception as e:
+                            print("获取全文微博失败")
+                    else:
+                        content = div[0].find('span', attrs={'class': 'ctt'}).getText()
 
-                        faBuTime = str(span_split[0])
-                        laiYuan = span_split[1] if len(span_split) == 2 else "无"
-
-                    elif len(div) == 3:  # 转发
-                        print("该条微博ID", div[0].parent.get("id"))
-                        yuanChuang = '0'
-                        content = div[0].find('span',attrs={'class':'ctt'}).getText()
-                        aa = div[2].find_all('a')
-                        for a in aa:
-                            text = a.getText()
-                            if "赞" in text:
-                                dianZhan = (text.split('[')[1]).replace(']', '')
-                            elif "转发" in text:
-                                zhuanFa = (text.split('[')[1]).replace(']', '')
-                            elif "评论" in text:
-                                pinLun = (text.split('[')[1]).replace(']', '')
-                        # 获取来源和时间
-                        span = divs.find("span",attrs={'class':"ct"}).getText()
-                        span_split = span.split("来自")
-                        faBuTime = str(span_split[0])
-                        laiYuan = span_split[1] if len(span_split) == 2 else "无"
+                    aa = div[div_num-1].find_all("a")   # 用来获取点赞，转发，评论数
+                    for a in aa:
+                        text = a.getText()
+                        if "赞" in text:
+                            dianZhan = (text.split('[')[1]).replace(']', '')
+                        elif "转发" in text:
+                            zhuanFa = (text.split('[')[1]).replace(']', '')
+                        elif "评论" in text:
+                            pinLun = (text.split('[')[1]).replace(']', '')
+                    # 获取来源和时间
+                    span = divs.find("span", attrs={'class': "ct"}).getText()
+                    span_split = span.split("来自")
+                    faBuTime = str(span_split[0])
+                    laiYuan = span_split[1] if len(span_split) == 2 else "无"
                     weibo_id = div[0].parent.get("id")
+
                     print("微博ID {} 微博内容 {} \n 赞 {} 转发 {} 评论 {} 来源 {} 时间 {}".
                           format(weibo_id,content, dianZhan, zhuanFa, pinLun,laiYuan,faBuTime,))
                     print()
