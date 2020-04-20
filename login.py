@@ -122,32 +122,61 @@ class WeiboLogin():
                     div = divs.find_all("div")
                     content=dianZhan= zhuanFa= pinLun= laiYuan= faBuTime = ""
                     if len(div) == 1:  # 原创无图
-                        pass
-                        # content = div[0].find("span", attrs={'class': 'ctt'}).getText()
-                        # aa = div[0].find_all('a')
-                        # for a in aa:
-                        #     text = a.getText()
-                        #     if "赞" in text:
-                        #         dianZhan = (text.split('[')[1]).replace(']', '')
-                        #     elif ('转发' in text):
-                        #         zhuanFa = (text.split('[')[1]).replace(']', '')
-                        #     elif ('评论' in text):
-                        #         pinLun = (text.split('[')[1]).replace(']', '')
-                        # # 获取来源和时间
-                        # span = divs.find("span",attrs={'class':"ct"}).getText()
-                        # span_split = span.split("来自")
-                        # faBuTime = str(span_split[0])
-                        # laiYuan = span_split[1] if len(span_split) == 2 else "无"
+                        content_elem = div[0].find('span', attrs={'class': 'ctt'})  # 获取内容元素
+                        print("该条微博ID",div[0].parent.get("id"))
+                        full_url = None
+                        for full_url in content_elem: pass
+                        for full_url in content_elem: pass
+                        if len(full_url.string) == 2:
+                            # print("full_url",full_url.get("href"),full_url.string,type(full_url))
+                            try:
+                                f_url = full_url.get("href")
+                                # print("---------输出 f_url节点")
+                                # print(f_url)
+                                # print("---------输出f_url节点完毕")
+                                # print("获取全文链接",f_url)
+                                content =  self.getFullContent(f_url)
+                            except Exception as e:
+                                print("获取全文微博失败")
+                        else:
+                            content = div[0].find('span', attrs={'class': 'ctt'}).getText()
+
+                        aa = div[0].find_all('a')
+                        for a in aa:
+                            text = a.getText()
+                            if "赞" in text:
+                                dianZhan = (text.split('[')[1]).replace(']', '')
+                            elif ('转发' in text):
+                                zhuanFa = (text.split('[')[1]).replace(']', '')
+                            elif ('评论' in text):
+                                pinLun = (text.split('[')[1]).replace(']', '')
+                        # 获取来源和时间
+                        span = divs.find("span",attrs={'class':"ct"}).getText()
+                        span_split = span.split("来自")
+                        faBuTime = str(span_split[0])
+                        laiYuan = span_split[1] if len(span_split) == 2 else "无"
                     elif len(div) == 2:  # 原创有图
                         content_elem = div[0].find('span', attrs={'class': 'ctt'})  # 获取内容元素
-                        full_text_a_elem = content_elem.find('a') #   获取全文元素
-                        try:
-                            f_url = full_text_a_elem.get("href")
-                            print("获取全文链接",full_text_a_elem.get("href"))
-                            self.getFullContent(f_url)
-                        except Exception as e:
-                            print("获取全文微博失败")
-                        content = div[0].find('span', attrs={'class': 'ctt'}).getText()
+                        print("该条微博ID", div[0].parent.get("id"))
+                        # print("content_elem的大小",len(content_elem))
+                        # print("查看内容")
+                        # for cur_cont in content_elem:
+                        #     print('==',cur_cont)
+                        full_url = None
+                        for full_url in content_elem: pass
+                        if len(full_url.string) == 2:
+                            # print("full_url",full_url.get("href"),full_url.string,type(full_url))
+                            try:
+                                f_url = full_url.get("href")
+                                # print("---------输出 f_url节点")
+                                # print(f_url)
+                                # print("---------输出f_url节点完毕")
+                                # print("获取全文链接",f_url)
+                                content =  self.getFullContent(f_url)
+                            except Exception as e:
+                                print("获取全文微博失败")
+                        else:
+                            content = div[0].find('span', attrs={'class': 'ctt'}).getText()
                         # print("内容: ",content)
                         aa = div[1].find_all('a')
                         for a in aa:
@@ -168,25 +197,26 @@ class WeiboLogin():
                         laiYuan = span_split[1] if len(span_split) == 2 else "无"
 
                     elif len(div) == 3:  # 转发
-                        pass
-                        # yuanChuang = '0'
-                        # content = div[0].find('span',attrs={'class':'ctt'}).getText()
-                        # aa = div[2].find_all('a')
-                        # for a in aa:
-                        #     text = a.getText()
-                        #     if "赞" in text:
-                        #         dianZhan = (text.split('[')[1]).replace(']', '')
-                        #     elif "转发" in text:
-                        #         zhuanFa = (text.split('[')[1]).replace(']', '')
-                        #     elif "评论" in text:
-                        #         pinLun = (text.split('[')[1]).replace(']', '')
-                        # # 获取来源和时间
-                        # span = divs.find("span",attrs={'class':"ct"}).getText()
-                        # span_split = span.split("来自")
-                        # faBuTime = str(span_split[0])
-                        # laiYuan = span_split[1] if len(span_split) == 2 else "无"
-                    # print("微博内容 {} \n 赞 {} 转发 {} 评论 {} 来源 {} 时间 {}".
-                    #       format(content, dianZhan, zhuanFa, pinLun,laiYuan,faBuTime,))
+                        print("该条微博ID", div[0].parent.get("id"))
+                        yuanChuang = '0'
+                        content = div[0].find('span',attrs={'class':'ctt'}).getText()
+                        aa = div[2].find_all('a')
+                        for a in aa:
+                            text = a.getText()
+                            if "赞" in text:
+                                dianZhan = (text.split('[')[1]).replace(']', '')
+                            elif "转发" in text:
+                                zhuanFa = (text.split('[')[1]).replace(']', '')
+                            elif "评论" in text:
+                                pinLun = (text.split('[')[1]).replace(']', '')
+                        # 获取来源和时间
+                        span = divs.find("span",attrs={'class':"ct"}).getText()
+                        span_split = span.split("来自")
+                        faBuTime = str(span_split[0])
+                        laiYuan = span_split[1] if len(span_split) == 2 else "无"
+                    weibo_id = div[0].parent.get("id")
+                    print("微博ID {} 微博内容 {} \n 赞 {} 转发 {} 评论 {} 来源 {} 时间 {}".
+                          format(weibo_id,content, dianZhan, zhuanFa, pinLun,laiYuan,faBuTime,))
                     print()
                 # if " 全文" in content:
                 #     print("fuck")
@@ -218,8 +248,8 @@ class WeiboLogin():
             c_soup = BeautifulSoup(self.browser.page_source, 'lxml')
             c_content_divs = c_soup.find('div', attrs={'id': 'M_'})
             c_content_elem = c_content_divs.find('span', attrs={"class": "ctt"})  # 获取内容元素
-            print("全文内容", c_content_elem.getText())
-            print('div lens', len(c_content_divs))
+            # print("全文内容", c_content_elem.getText())
+            # print('div lens', len(c_content_divs))
             # print(c_content_divs[0])
             print("离开获取全文函数")
             return c_content_elem.getText()
