@@ -9,16 +9,17 @@ import re
 import sys
 
 class WeiboUser:
-    def __init__(self):
+    def __init__(self,parent="",son=""):
         self.userName = ""  # 用户名
         self.id = ""        # 用于访问用户微博首页的id
         self.uid = ""       # uid可以用于关注列表，评论列表等
         self.fansNum = ""       # 粉丝数
+        self.parentUser = parent
+        self.sonUser = son
 
     def print(self):
-        print("用户名：{} id: {} uid: {} 粉丝数：{}".format(self.userName,
-                                                    self.id,
-                                                    self.uid,self.fansNum))
+        print("用户名：{} id: {} uid: {} 粉丝数：{} 父微博：{} 子微博：{}"
+              .format(self.userName,self.id, self.uid,self.fansNum,self.parentUser,self.sonUser))
 
 class WeiboLogin():
     def __init__(self, username="0331_ee6ebc@163.com", password="cua633476"):
@@ -40,7 +41,7 @@ class WeiboLogin():
 
         self.id_url = 'http://weibo.cn/'
         self.page_url = 'http://weibo.cn/{}?page={}'
-        self.follow_url = 'http://weibo.cn/{}/follow?page={}'   # 分别由uid和page填充
+        self.follow_page_url = 'http://weibo.cn/{}/fans?page={}'   # 分别由uid和page填充
         print("初始化完成")
 
     def open(self):
@@ -132,7 +133,7 @@ class WeiboLogin():
                     self.fans_url = self.id_url + a.get("href")
                     print(self.fans_url)
             # 爬取关注与粉丝
-            self.getFollowAndFans()
+            self.getFollowAndFans(cur_weibo_user=id)
 
             # 爬取微博数量
             divMessage = soup.find('div', attrs={'class': 'tip2'})
@@ -226,16 +227,14 @@ class WeiboLogin():
 
         # sys.exit(0)
 
-    def getFollowAndFans(self):
+    def getFollowAndFans(self,cur_weibo_user):
         print("进入获取follow函数")
-        self.browser.get(self.follow_url)   # 打开follow页面
+        self.browser.get(self.fans_url)   # 打开follow页面
 
         WebDriverWait(self.browser,3).until(
-            EC.title_is("美国驻华大使馆关注的人")
+            EC.title_is("美国驻华大使馆的粉丝")
         )
-        # html_doc = self.browser.page_source
-        # new_html = (html_doc.replace('<br>', ''))
-        # print(new_html)
+        print(self.fans_url)
         soup = BeautifulSoup(self.browser.page_source,'lxml')
         # 获取follow页码
         pageSize = soup.find('div',attrs={"id":"pagelist"})
@@ -244,7 +243,8 @@ class WeiboLogin():
         print(pageSize)
 
         for page_index in range(1,int(pageSize)+1):
-            follow_page_url = self.follow_url.format(self.uid,page_index)
+            print(self.follow_url)
+            follow_page_url = self.follow_page_url.format(self.uid,page_index)
             print("follow_page",follow_page_url)
             self.browser.get(follow_page_url)
             time.sleep(1)
@@ -264,7 +264,7 @@ class WeiboLogin():
                 need_content = table.find_all("td",attrs={"valign":"top"})
                 print("need_content的数量 {}".format(len(need_content)))
                 need_content = need_content[1]
-                user = WeiboUser()
+                user = WeiboUser(parent="",son=cur_weibo_user)  # 当前微博用户作为儿子
                 for i, temp_element  in enumerate(need_content):
                     if "Tag" in str(type(temp_element)):
                         if i ==0:
