@@ -5,8 +5,20 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 import time
+import re
 import sys
 
+class WeiboUser:
+    def __init__(self):
+        self.userName = ""  # 用户名
+        self.id = ""        # 用于访问用户微博首页的id
+        self.uid = ""       # uid可以用于关注列表，评论列表等
+        self.fansNum = ""       # 粉丝数
+
+    def print(self):
+        print("用户名：{} id: {} uid: {} 粉丝数：{}".format(self.userName,
+                                                    self.id,
+                                                    self.uid,self.fansNum))
 
 class WeiboLogin():
     def __init__(self, username="0331_ee6ebc@163.com", password="cua633476"):
@@ -221,6 +233,9 @@ class WeiboLogin():
         WebDriverWait(self.browser,3).until(
             EC.title_is("美国驻华大使馆关注的人")
         )
+        # html_doc = self.browser.page_source
+        # new_html = (html_doc.replace('<br>', ''))
+        # print(new_html)
         soup = BeautifulSoup(self.browser.page_source,'lxml')
         # 获取follow页码
         pageSize = soup.find('div',attrs={"id":"pagelist"})
@@ -233,22 +248,44 @@ class WeiboLogin():
             print("follow_page",follow_page_url)
             self.browser.get(follow_page_url)
             time.sleep(1)
+
             # 使用BeautifulSoup解析网页的HTML
-            soup = BeautifulSoup(self.browser.page_source, 'lxml')
+            html_doc = self.browser.page_source
+            print("--")
+            print(html_doc)
+            new_html = (html_doc.replace('<br>', ''))
+            soup = BeautifulSoup(new_html,'lxml')
             body = soup.find('body')
             table_all = body.find_all_next('table')
-            for table in table_all:
+            for t_num,table in enumerate(table_all):
                 print(type(table))
-                # print(table)
-                need_content = table.find("td",attrs={"valign":"top"})
-                print(need_content)
-                for fuck  in need_content:
-                    print(fuck)
-                # aa = need_content.find_all("a")
-                # for a in aa:
-                #     print(a)
-                print(need_content.getText())
-                break
+                print("=====================")
+
+                need_content = table.find_all("td",attrs={"valign":"top"})
+                print("need_content的数量 {}".format(len(need_content)))
+                need_content = need_content[1]
+                user = WeiboUser()
+                for i, temp_element  in enumerate(need_content):
+                    if "Tag" in str(type(temp_element)):
+                        if i ==0:
+                            user.userName = temp_element.getText()
+                            id_url = temp_element.get("href")
+                            temp_element = str(temp_element)
+
+                            user.id = id_url.split("/")[-1]
+                            # print("url",id_url.split("/"))
+                        elif i == 3:
+                            temp_element = str(temp_element)
+                            user.uid = re.split(r'[? = &]',temp_element)[4]
+                            # print(re.split(r'[? = &]',temp_element))
+                    else:
+                        user.fansNum = temp_element.string
+                        # print(user.fansNum)
+                    # print("->",temp_element)
+                    # print("==>",type(temp_element))
+                user.print()
+                if t_num == 1:
+                    break
             break
         print("离开获取follow函数")
 
