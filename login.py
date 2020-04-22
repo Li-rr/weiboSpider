@@ -321,9 +321,9 @@ class WeiboLogin():
                 user.print()
                 # 向数据库中插入数据
                 insertDataToFollowFansGraph(self.db_weibo,user.to_db_data())
-                if t_num == 1:
-                    break
-            break
+            #     if t_num == 1:
+            #         break
+            # break
         print("离开获取follow函数")
 
 
