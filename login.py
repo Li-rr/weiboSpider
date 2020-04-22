@@ -4,6 +4,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
+from mondbSql import *
 import time
 import re
 import sys
@@ -21,8 +22,15 @@ class WeiboUser:
     def print(self):
         print("用户名：{} id: {} uid: {} 粉丝数：{} 父微博：{} 子微博：{}"
               .format(self.userName, self.id, self.uid, self.fansNum, self.parentUser, self.sonUser))
-
-
+    # 转换为数据库存储格式的数据
+    def to_db_data(self):
+        follow_fans_dict = {}
+        follow_fans_dict['userName'] = self.userName
+        follow_fans_dict['id'] = self.id
+        follow_fans_dict['fansNum'] = self.fansNum
+        follow_fans_dict['parentUser'] = self.parentUser
+        follow_fans_dict['sonUser'] = self.sonUser
+        return follow_fans_dict
 class WeiboLogin():
     def __init__(self, username="0331_ee6ebc@163.com", password="cua633476"):
         self.url = "https://passport.weibo.cn/signin/login"
@@ -45,6 +53,8 @@ class WeiboLogin():
         self.page_url = 'http://weibo.cn/{}?page={}'
         self.follow_page_url = 'http://weibo.cn/{}/follow?page={}'  # 分别由uid和page填充
         self.fans_page_url = 'http://weibo.cn/{}/fans?page={}'  # 分别由uid和page填充
+
+        self.db_weibo,self.conn = connDB()  # 获取数据库连接与weibo数据库
         print("初始化完成")
 
     def open(self):
@@ -309,6 +319,8 @@ class WeiboLogin():
                     # print("->",temp_element)
                     # print("==>",type(temp_element))
                 user.print()
+                # 向数据库中插入数据
+                insertDataToFollowFansGraph(self.db_weibo,user.to_db_data())
                 if t_num == 1:
                     break
             break
@@ -322,3 +334,4 @@ if __name__ == '__main__':
     # print('获取cookie成功')
     # print('Cookie:', cookie_str)
     loginer.getUserInfoAndWeibo()
+    close(loginer.conn) # 关闭数据库连接
