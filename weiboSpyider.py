@@ -44,7 +44,8 @@ class WeiboLogin():
         self.option.add_argument("--disable-gpu")
         self.browser = webdriver.Firefox()
         self.browser.set_window_size(1050, 840)
-        self.wait = WebDriverWait(self.browser, 20)
+        self.timeout = 10  # 设置超时时间
+        self.wait = WebDriverWait(self.browser, self.timeout)
         self.username = username
         self.password = password
         self.uids = ['1743951792']  # 美国大使馆的uid
@@ -87,7 +88,7 @@ class WeiboLogin():
         self.open()
 
         try:
-            WebDriverWait(self.browser, 30).until(
+            WebDriverWait(self.browser, self.timeout).until(
                 EC.presence_of_element_located((By.CLASS_NAME, "geetest_radar_tip"))
             )
             print('当前页面的url', self.browser.current_url)
@@ -101,7 +102,7 @@ class WeiboLogin():
             print(e)
 
         try:
-            WebDriverWait(self.browser, 30).until(
+            WebDriverWait(self.browser, self.timeout).until(
                 EC.title_is("微博")
             )
 
@@ -122,7 +123,7 @@ class WeiboLogin():
             self.browser.get(id_url)
 
             expect_title = "{}的微博".format(self.id2name[id])
-            WebDriverWait(self.browser, 3).until(
+            WebDriverWait(self.browser, self.timeout).until(
                 EC.title_is(expect_title)
             )
             # 使用BeautifulSoup解析网页的HTML
@@ -238,7 +239,7 @@ class WeiboLogin():
         print('拼接后的url', f_url)
         self.browser.get(f_url)
         try:
-            WebDriverWait(self.browser, 3).until(
+            WebDriverWait(self.browser, self.timeout).until(
                 EC.title_is("评论列表")
             )
             c_soup = BeautifulSoup(self.browser.page_source, 'lxml')
@@ -259,12 +260,12 @@ class WeiboLogin():
 
         if flag == "关注":
             self.browser.get(self.follow_url)  # 打开follow页面
-            WebDriverWait(self.browser, 3).until(
+            WebDriverWait(self.browser, self.timeout).until(
                 EC.title_is("{}关注的人".format(self.id2name[cur_weibo_user]))
             )
         elif flag == "粉丝":
             self.browser.get(self.fans_url)  # 打开fans页面
-            WebDriverWait(self.browser, 3).until(
+            WebDriverWait(self.browser, self.timeout).until(
                 EC.title_is("{}的粉丝".format(self.id2name[cur_weibo_user]))
             )
 
@@ -376,7 +377,7 @@ class WeiboLogin():
                 # print("当前页面的标题 {}".format(self.browser.title))
                 expect_title = "{}的微博".format(self.id2name[cur_node])
                 # print("期望页面标题：",expect_title)
-                WebDriverWait(self.browser, 3).until(
+                WebDriverWait(self.browser, self.timeout).until(
                     EC.title_is(expect_title)  # 这里可以修改成列表存储的形式
                 )
                 # 使用BeautifulSoup解析网页的HTML
@@ -441,13 +442,13 @@ class WeiboLogin():
         if flag == "关注":
             self.browser.get(self.follow_url)  # 打开follow页面
             expect_title = "{}关注的人".format(self.id2name[cur_weibo_user])
-            WebDriverWait(self.browser, 3).until(
+            WebDriverWait(self.browser, self.timeout).until(
                 EC.title_is(expect_title)
             )
         elif flag == "粉丝":
             self.browser.get(self.fans_url)  # 打开fans页面
             expect_title = "{}的粉丝".format(self.id2name[cur_weibo_user])
-            WebDriverWait(self.browser, 3).until(
+            WebDriverWait(self.browser, self.timeout).until(
                 EC.title_is(expect_title)
             )
         soup = BeautifulSoup(self.browser.page_source, 'lxml')
