@@ -356,12 +356,13 @@ class WeiboLogin():
 
             while not crawl_queue.empty():
 
-                cur_node = crawl_queue.get()    # 获取节点
+                cur_node = crawl_queue.get()    # 获取节点，获取该节点的信息
                 id_url = self.id_url + cur_node  # 用于访问用户首页
                 print("cur_node {}".format(cur_node))
 
                 self.browser.get(id_url)  # 访问用户首页
-                # 可能是这里出错
+
+
                 # print("当前页面的标题 {}".format(self.browser.title))
                 expect_title = "{}的微博".format(self.id2name[cur_node])
                 # print("期望页面标题：",expect_title)
@@ -371,11 +372,13 @@ class WeiboLogin():
                 # 使用BeautifulSoup解析网页的HTML
                 soup = BeautifulSoup(self.browser.page_source, 'lxml')
 
+                print("-->当前用户姓名：",self.id2name[cur_node])
                 # 获取uid
                 uid = soup.find('td', attrs={'valign': 'top'})
                 uid = uid.a['href']
                 uid = uid.split('/')[1]
                 self.uid = uid
+
 
                 # 获取个人信息
                 divMessage = soup.find('div', attrs={'class': 'tip2'})
@@ -385,18 +388,20 @@ class WeiboLogin():
                 # 获取粉丝/关注列表
                 aa = divMessage.find_all('a')
 
+                # 获取节点信息结束，获取其关注或粉丝
                 user_id_list = []   # 存储关注或粉丝的列表
                 for a in aa:
                     a_text = a.getText()
                     print(a_text, type(a_text))
                     if "关注" in a_text:
                         self.follow_url = self.id_url + a.get("href")
-                        print(self.follow_url)
+                        # print(self.follow_url)
                         # # 爬取关注
                         # self.getFollowAndFans(cur_weibo_user=id, flag="关注")
                     elif "粉丝" in a_text:
                         self.fans_url = self.id_url + a.get("href")
                         # 爬取粉丝
+                        print("进入getFollowAndFansUrl函数")
                         user_id_list = self.getFollowAndFansUrl(cur_weibo_user=cur_node, flag="粉丝")
 
                 print("粉丝的数量：{}".format(len(user_id_list)))
@@ -477,12 +482,12 @@ class WeiboLogin():
                             id_url = temp_element.get("href")
                             user_id = id_url.split("/")[-1]
                             self.id2name[user_id] = userName
-                            print("姓名：{} id：{} 姓名长度：{}".format(userName,user_id,len(userName)))
+                            # print("姓名：{} id：{} 姓名长度：{}".format(userName,user_id,len(userName)))
                             user_id_list.append(user_id)
                             count += 1
-                break
+                # break
             # print("页码：{} 的粉丝数量：{}".format(page_index,count))
-            break
+            # break
         print("============")
         print("粉丝或关注者的数量：{}".format(len(user_id_list)))
         return user_id_list
