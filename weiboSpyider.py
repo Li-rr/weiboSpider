@@ -49,7 +49,8 @@ class WeiboLogin():
         self.password = password
         self.uids = ['1743951792']  # 美国大使馆的uid
         self.uid = ""
-        self.ids = ['usembassy']  # 美国驻华大使馆的id
+        self.ids = ['7325110967','usembassy']  # 美国驻华大使馆的id
+
         self.seeds = ['usembassy']  # 用于bfs遍历的种子
         self.follow_url = ""  # 关注的人
         self.fans_url = ""  # 关注他的人
@@ -61,6 +62,7 @@ class WeiboLogin():
 
         self.id2name = {}   # key为id，value为name
         self.id2name['usembassy'] = "美国驻华大使馆"
+        self.id2name['7325110967'] = "用户7325110967"
         self.db_weibo, self.conn = connDB()  # 获取数据库连接与weibo数据库
         print("初始化完成")
 
@@ -118,9 +120,10 @@ class WeiboLogin():
             id_url = self.id_url + id
             print(id_url)
             self.browser.get(id_url)
-            # try:
+
+            expect_title = "{}的微博".format(self.id2name[id])
             WebDriverWait(self.browser, 3).until(
-                EC.title_is("美国驻华大使馆的微博")
+                EC.title_is(expect_title)
             )
             # 使用BeautifulSoup解析网页的HTML
             soup = BeautifulSoup(self.browser.page_source, 'lxml')
@@ -131,10 +134,7 @@ class WeiboLogin():
             uid = uid.split('/')[1]
             self.uid = uid
 
-            # 爬取最大页码数目
-            pageSize = soup.find('div', attrs={'id': 'pagelist'})
-            pageSize = pageSize.find('div').getText()
-            pageSize = (pageSize.split('/')[1]).split('页')[0]
+
 
             # 爬取微博数量
             divMessage = soup.find('div', attrs={'class': 'tip2'})
@@ -155,6 +155,12 @@ class WeiboLogin():
                     # 爬取粉丝
                     self.getFollowAndFans(cur_weibo_user=id, flag="粉丝")
                     print(self.fans_url)
+
+            break
+            # 爬取最大页码数目
+            pageSize = soup.find('div', attrs={'id': 'pagelist'})
+            pageSize = pageSize.find('div').getText()
+            pageSize = (pageSize.split('/')[1]).split('页')[0]
 
             print("开始爬取全文内容")
             # 爬取微博数量
@@ -254,12 +260,12 @@ class WeiboLogin():
         if flag == "关注":
             self.browser.get(self.follow_url)  # 打开follow页面
             WebDriverWait(self.browser, 3).until(
-                EC.title_is("美国驻华大使馆关注的人")
+                EC.title_is("{}关注的人".format(self.id2name[cur_weibo_user]))
             )
         elif flag == "粉丝":
             self.browser.get(self.fans_url)  # 打开fans页面
             WebDriverWait(self.browser, 3).until(
-                EC.title_is("美国驻华大使馆的粉丝")
+                EC.title_is("{}的粉丝".format(self.id2name[cur_weibo_user]))
             )
 
         soup = BeautifulSoup(self.browser.page_source, 'lxml')
@@ -442,7 +448,7 @@ class WeiboLogin():
             )
         soup = BeautifulSoup(self.browser.page_source, 'lxml')
 
-        # 获取页码
+        # 获取页码，这里需要考虑没有页码的情况
         pageSize = soup.find('div', attrs={"id": "pagelist"})
         pageSize = pageSize.find('div').getText()
         pageSize = pageSize.split("/")[1].split('页')[0]
@@ -500,6 +506,6 @@ if __name__ == '__main__':
     cookie_str = loginer.getCookies()
     # print('获取cookie成功')
     # print('Cookie:', cookie_str)
-    # loginer.getUserInfoAndWeibo()
-    loginer.bfs()
+    loginer.getUserInfoAndWeibo()
+    # loginer.bfs()
     close(loginer.conn)  # 关闭数据库连接
