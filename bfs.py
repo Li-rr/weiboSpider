@@ -28,6 +28,7 @@ def bfs(adj,start):
     layer = 0
     last = start   # 第0层的元素
     tail = ""
+
     q.put(start)
     while not q.empty():
         u = q.get()
