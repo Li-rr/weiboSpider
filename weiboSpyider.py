@@ -149,7 +149,7 @@ class WeiboLogin():
                     self.follow_url = self.id_url + a.get("href")
                     print(self.follow_url)
                     # 爬取关注
-                    self.getFollowAndFans(cur_weibo_user=id, flag="关注")
+                    # self.getFollowAndFans(cur_weibo_user=id, flag="关注")
                 elif "粉丝" in a_text:
                     self.fans_url = self.id_url + a.get("href")
                     # 爬取粉丝
@@ -271,9 +271,13 @@ class WeiboLogin():
         soup = BeautifulSoup(self.browser.page_source, 'lxml')
 
         # 获取follow or fans 页码
-        pageSize = soup.find('div', attrs={"id": "pagelist"})
-        pageSize = pageSize.find('div').getText()
-        pageSize = pageSize.split("/")[1].split('页')[0]
+        try:
+            pageSize = soup.find('div', attrs={"id": "pagelist"})
+            pageSize = pageSize.find('div').getText()
+            pageSize = pageSize.split("/")[1].split('页')[0]
+        except Exception as e:
+            print(e)
+            pageSize = 1
         print(pageSize)
 
         # 遍历 fans or follow 页面
@@ -449,9 +453,14 @@ class WeiboLogin():
         soup = BeautifulSoup(self.browser.page_source, 'lxml')
 
         # 获取页码，这里需要考虑没有页码的情况
-        pageSize = soup.find('div', attrs={"id": "pagelist"})
-        pageSize = pageSize.find('div').getText()
-        pageSize = pageSize.split("/")[1].split('页')[0]
+        try:
+            pageSize = soup.find('div', attrs={"id": "pagelist"})
+            pageSize = pageSize.find('div').getText()
+            pageSize = pageSize.split("/")[1].split('页')[0]
+        except Exception as e:
+            print(e)
+            print("当前用户 {} 粉丝或关注数太少".format(cur_weibo_user))
+            pageSize = 1
         print("{} 页码：{}".format(flag, pageSize))
         user_id_list = []  # 存储爬取到的关注或粉丝的id
         # 遍历 fans or follow页面
@@ -506,6 +515,6 @@ if __name__ == '__main__':
     cookie_str = loginer.getCookies()
     # print('获取cookie成功')
     # print('Cookie:', cookie_str)
-    loginer.getUserInfoAndWeibo()
-    # loginer.bfs()
+    # loginer.getUserInfoAndWeibo()
+    loginer.bfs()
     close(loginer.conn)  # 关闭数据库连接
