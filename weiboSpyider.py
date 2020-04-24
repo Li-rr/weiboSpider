@@ -59,6 +59,8 @@ class WeiboLogin():
         self.follow_page_url = 'http://weibo.cn/{}/follow?page={}'  # 分别由uid和page填充
         self.fans_page_url = 'http://weibo.cn/{}/fans?page={}'  # 分别由uid和page填充
 
+        self.id2name = {}   # key为id，value为name
+        self.id2name['usembassy'] = "美国驻华大使馆"
         self.db_weibo, self.conn = connDB()  # 获取数据库连接与weibo数据库
         print("初始化完成")
 
@@ -359,8 +361,12 @@ class WeiboLogin():
                 print("cur_node {}".format(cur_node))
 
                 self.browser.get(id_url)  # 访问用户首页
+                # 可能是这里出错
+                # print("当前页面的标题 {}".format(self.browser.title))
+                expect_title = "{}的微博".format(self.id2name[cur_node])
+                # print("期望页面标题：",expect_title)
                 WebDriverWait(self.browser, 3).until(
-                    EC.title_is("美国驻华大使馆的微博")  # 这里可以修改成列表存储的形式
+                    EC.title_is(expect_title)  # 这里可以修改成列表存储的形式
                 )
                 # 使用BeautifulSoup解析网页的HTML
                 soup = BeautifulSoup(self.browser.page_source, 'lxml')
@@ -419,13 +425,15 @@ class WeiboLogin():
         '''
         if flag == "关注":
             self.browser.get(self.follow_url)  # 打开follow页面
+            expect_title = "{}关注的人".format(self.id2name[cur_weibo_user])
             WebDriverWait(self.browser, 3).until(
-                EC.title_is("美国驻华大使馆关注的人")
+                EC.title_is(expect_title)
             )
         elif flag == "粉丝":
             self.browser.get(self.fans_url)  # 打开fans页面
+            expect_title = "{}的粉丝".format(self.id2name[cur_weibo_user])
             WebDriverWait(self.browser, 3).until(
-                EC.title_is("美国驻华大使馆的粉丝")
+                EC.title_is(expect_title)
             )
         soup = BeautifulSoup(self.browser.page_source, 'lxml')
 
@@ -468,11 +476,13 @@ class WeiboLogin():
                             userName = temp_element.getText()
                             id_url = temp_element.get("href")
                             user_id = id_url.split("/")[-1]
-                            # print("姓名：{} id：{}".format(userName,user_id))
+                            self.id2name[user_id] = userName
+                            print("姓名：{} id：{} 姓名长度：{}".format(userName,user_id,len(userName)))
                             user_id_list.append(user_id)
                             count += 1
+                break
             # print("页码：{} 的粉丝数量：{}".format(page_index,count))
-
+            break
         print("============")
         print("粉丝或关注者的数量：{}".format(len(user_id_list)))
         return user_id_list
