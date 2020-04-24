@@ -44,7 +44,7 @@ class WeiboLogin():
         self.option.add_argument("--disable-gpu")
         self.browser = webdriver.Firefox()
         self.browser.set_window_size(1050, 840)
-        self.timeout = 10  # 设置超时时间
+        self.timeout = 30  # 设置超时时间
         self.wait = WebDriverWait(self.browser, self.timeout)
         self.username = username
         self.password = password
