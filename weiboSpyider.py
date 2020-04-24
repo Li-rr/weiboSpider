@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 from mondbSql import *
 import time
 import re
+import queue
 import sys
 
 
@@ -22,6 +23,7 @@ class WeiboUser:
     def print(self):
         print("用户名：{} id: {} uid: {} 粉丝数：{} 父微博：{} 子微博：{}"
               .format(self.userName, self.id, self.uid, self.fansNum, self.parentUser, self.sonUser))
+
     # 转换为数据库存储格式的数据
     def to_db_data(self):
         follow_fans_dict = {}
@@ -31,6 +33,8 @@ class WeiboUser:
         follow_fans_dict['parentUser'] = self.parentUser
         follow_fans_dict['sonUser'] = self.sonUser
         return follow_fans_dict
+
+
 class WeiboLogin():
     def __init__(self, username="0331_ee6ebc@163.com", password="cua633476"):
         self.url = "https://passport.weibo.cn/signin/login"
@@ -46,6 +50,7 @@ class WeiboLogin():
         self.uids = ['1743951792']  # 美国大使馆的uid
         self.uid = ""
         self.ids = ['usembassy']  # 美国驻华大使馆的id
+        self.seeds = ['usembassy']  # 用于bfs遍历的种子
         self.follow_url = ""  # 关注的人
         self.fans_url = ""  # 关注他的人
 
@@ -54,7 +59,7 @@ class WeiboLogin():
         self.follow_page_url = 'http://weibo.cn/{}/follow?page={}'  # 分别由uid和page填充
         self.fans_page_url = 'http://weibo.cn/{}/fans?page={}'  # 分别由uid和page填充
 
-        self.db_weibo,self.conn = connDB()  # 获取数据库连接与weibo数据库
+        self.db_weibo, self.conn = connDB()  # 获取数据库连接与weibo数据库
         print("初始化完成")
 
     def open(self):
@@ -268,7 +273,7 @@ class WeiboLogin():
             if flag == "关注":
                 page_url = self.follow_page_url.format(self.uid, page_index)
             elif flag == "粉丝":
-                page_url = self.fans_page_url.format(self.uid,page_index)
+                page_url = self.fans_page_url.format(self.uid, page_index)
             print("page url", page_url)
             self.browser.get(page_url)
             time.sleep(1)
@@ -292,8 +297,8 @@ class WeiboLogin():
                 if flag == "关注":
                     user = WeiboUser(parent="", son=cur_weibo_user)  # 当前微博用户作为儿子
                 elif flag == "粉丝":
-                    user = WeiboUser(parent=cur_weibo_user,son = "")
-                print("len(need_content)",len(need_content))
+                    user = WeiboUser(parent=cur_weibo_user, son="")
+                print("len(need_content)", len(need_content))
                 for i, temp_element in enumerate(need_content):
                     if "Tag" in str(type(temp_element)):
                         if i == 0:
@@ -307,7 +312,7 @@ class WeiboLogin():
                             if i == 3:
                                 temp_element = str(temp_element)
                                 user.uid = re.split(r'[? = &]', temp_element)[4]
-                                print("===>",re.split(r'[? = &]',temp_element))
+                                print("===>", re.split(r'[? = &]', temp_element))
                         elif flag == "粉丝":
                             if i == 2:
                                 temp_element = str(temp_element)
@@ -320,11 +325,158 @@ class WeiboLogin():
                     # print("==>",type(temp_element))
                 user.print()
                 # 向数据库中插入数据
-                insertDataToFollowFansGraph(self.db_weibo,user.to_db_data())
+                insertDataToFollowFansGraph(self.db_weibo, user.to_db_data())
             #     if t_num == 1:
             #         break
             # break
         print("离开获取follow函数")
+
+    def bfs(self, choice=1):
+        '''
+        基于深度优先遍历，层序遍历粉丝
+        :param choice: 用于选择遍历粉丝还是关注，1：为粉丝；2：为关注
+        :return:
+        '''
+
+        # 从开始节点开始遍历
+        for seed in self.seeds:
+
+            crawl_queue = queue.Queue()  # 待访问队列
+            crawl_visited = set()  # 已访问列表
+
+            # 用于判断层数
+            last = seed
+            tail = ""
+            layer = 0
+
+            # 种子入队
+            crawl_queue.put(seed)
+
+            while not crawl_queue.empty():
+
+                cur_node = crawl_queue.get()    # 获取节点
+                id_url = self.id_url + cur_node  # 用于访问用户首页
+                print("cur_node {}".format(cur_node))
+
+                self.browser.get(id_url)  # 访问用户首页
+                WebDriverWait(self.browser, 3).until(
+                    EC.title_is("美国驻华大使馆的微博")  # 这里可以修改成列表存储的形式
+                )
+                # 使用BeautifulSoup解析网页的HTML
+                soup = BeautifulSoup(self.browser.page_source, 'lxml')
+
+                # 获取uid
+                uid = soup.find('td', attrs={'valign': 'top'})
+                uid = uid.a['href']
+                uid = uid.split('/')[1]
+                self.uid = uid
+
+                # 获取个人信息
+                divMessage = soup.find('div', attrs={'class': 'tip2'})
+                weiBoCount = divMessage.find('span').getText()
+                weiBoCount = (weiBoCount.split('[')[1]).replace(']', '')  # 微博数量
+
+                # 获取粉丝/关注列表
+                aa = divMessage.find_all('a')
+
+                user_id_list = []   # 存储关注或粉丝的列表
+                for a in aa:
+                    a_text = a.getText()
+                    print(a_text, type(a_text))
+                    if "关注" in a_text:
+                        self.follow_url = self.id_url + a.get("href")
+                        print(self.follow_url)
+                        # # 爬取关注
+                        # self.getFollowAndFans(cur_weibo_user=id, flag="关注")
+                    elif "粉丝" in a_text:
+                        self.fans_url = self.id_url + a.get("href")
+                        # 爬取粉丝
+                        user_id_list = self.getFollowAndFansUrl(cur_weibo_user=cur_node, flag="粉丝")
+
+                print("粉丝的数量：{}".format(len(user_id_list)))
+
+                # 节点入队：
+                for cur_user in user_id_list:
+                    if cur_user not in crawl_visited:
+                        crawl_visited.add(cur_user)
+                        crawl_queue.put(cur_user)   # 入队
+                        tail = cur_user # 当前层最后一个入队的元素
+
+                # 如果当前层最后一个入队的元素出队，则进入下一层
+                if cur_node == last:
+                    layer += 1
+                    last = tail
+                # 爬到第三层时停止
+                if layer == 3:
+                    break
+
+    def getFollowAndFansUrl(self, cur_weibo_user,flag):
+        '''
+        获取关注或者粉丝的链接
+        :param cur_weibo_user:
+        :param flag: 用于标识现在爬取的是粉丝还是关注
+        :return: 返回由用户id获取的列表
+        '''
+        if flag == "关注":
+            self.browser.get(self.follow_url)  # 打开follow页面
+            WebDriverWait(self.browser, 3).until(
+                EC.title_is("美国驻华大使馆关注的人")
+            )
+        elif flag == "粉丝":
+            self.browser.get(self.fans_url)  # 打开fans页面
+            WebDriverWait(self.browser, 3).until(
+                EC.title_is("美国驻华大使馆的粉丝")
+            )
+        soup = BeautifulSoup(self.browser.page_source, 'lxml')
+
+        # 获取页码
+        pageSize = soup.find('div', attrs={"id": "pagelist"})
+        pageSize = pageSize.find('div').getText()
+        pageSize = pageSize.split("/")[1].split('页')[0]
+        print("{} 页码：{}".format(flag, pageSize))
+        user_id_list = []  # 存储爬取到的关注或粉丝的id
+        # 遍历 fans or follow页面
+        for page_index in range(1, int(pageSize) + 1):
+            if flag == "关注":
+                page_url = self.follow_page_url.format(self.uid, page_index)
+            elif flag == "粉丝":
+                page_url = self.fans_page_url.format(self.uid, page_index)
+
+            # print(" {} page url {}".format(flag,page_url))
+            # 访问页面
+            self.browser.get(page_url)
+            time.sleep(1)
+
+            html_doc = self.browser.page_source
+            # print("--")
+            # print(html_doc)
+            new_html = (html_doc.replace('<br>', ''))
+            soup = BeautifulSoup(new_html, 'lxml')
+            body = soup.find('body')
+            table_all = body.find_all_next('table')
+            count =0
+            # 遍历每个粉丝或者关注者
+            for t_num, table in enumerate(table_all):
+                need_content = table.find_all("td", attrs={"valign": "top"})
+                # print("need_content的数量 {}".format(len(need_content)))
+                need_content = need_content[1]
+
+                # 获取id，注：不是uid
+                for i , temp_element in enumerate(need_content):
+                    if "Tag" in str(type(temp_element)):
+                        if i == 0:
+                            userName = temp_element.getText()
+                            id_url = temp_element.get("href")
+                            user_id = id_url.split("/")[-1]
+                            # print("姓名：{} id：{}".format(userName,user_id))
+                            user_id_list.append(user_id)
+                            count += 1
+            # print("页码：{} 的粉丝数量：{}".format(page_index,count))
+
+        print("============")
+        print("粉丝或关注者的数量：{}".format(len(user_id_list)))
+        return user_id_list
+            # break
 
 
 if __name__ == '__main__':
@@ -333,5 +485,6 @@ if __name__ == '__main__':
     cookie_str = loginer.getCookies()
     # print('获取cookie成功')
     # print('Cookie:', cookie_str)
-    loginer.getUserInfoAndWeibo()
-    close(loginer.conn) # 关闭数据库连接
+    # loginer.getUserInfoAndWeibo()
+    loginer.bfs()
+    close(loginer.conn)  # 关闭数据库连接
