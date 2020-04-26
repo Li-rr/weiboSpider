@@ -53,7 +53,7 @@ class WeiboLogin():
         self.uid = ""
         self.ids = ['7325110967','usembassy']  # 美国驻华大使馆的id
 
-        self.seeds = ['6567547334']  # 用于bfs遍历的种子,'usembassy'
+        self.seeds = ['usembassy']  # 用于bfs遍历的种子,'usembassy'
         self.follow_url = ""  # 关注的人
         self.fans_url = ""  # 关注他的人
 
@@ -430,7 +430,7 @@ class WeiboLogin():
                     layer += 1
                     last = tail
                 # 爬到第三层时停止
-                if layer == 2:
+                if layer == 4:
                     break
 
     # 获取用户信息
@@ -509,7 +509,7 @@ class WeiboLogin():
         user_info.person_url = personal_url[0][4:]
 
         user_info.userPrint()
-
+        insertDataToUserInfo(self.db_weibo,user_info.getDict())
 
     def getFollowAndFansUrl(self, cur_weibo_user,flag):
         '''
@@ -589,6 +589,9 @@ class WeiboLogin():
                             elif flag == "粉丝":
                                 user_realtion.father_id = cur_weibo_user
                                 user_realtion.son_id = user_id
+
+                            insertDataToUserRealtion(self.db_weibo,user_realtion.getDict())
+                            user_realtion.realtionPrint()
                 # break
             # print("页码：{} 的粉丝数量：{}".format(page_index,count))
             # break

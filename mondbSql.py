@@ -16,5 +16,13 @@ def insertDataToFollowFansGraph(db,data):
     # follow_fans_graph.insert(data)
     follow_fans_graph.update(data,{'$set':data},upsert=True)
 
+def insertDataToUserInfo(db,data):
+    userInfo_table = db.user_info_set
+    userInfo_table.insert(data)
+
+def insertDataToUserRealtion(db,data):
+    userRealtion_table = db.user_realtion_set
+    userRealtion_table.insert(data)
+
 def close(conn):
     conn.close()
