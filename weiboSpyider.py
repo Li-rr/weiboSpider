@@ -9,6 +9,7 @@ import time
 import re
 import queue
 import sys
+from model import *
 
 
 class WeiboUser:
@@ -135,12 +136,6 @@ class WeiboLogin():
             uid = uid.split('/')[1]
             self.uid = uid
 
-
-
-            # 爬取微博数量
-            divMessage = soup.find('div', attrs={'class': 'tip2'})
-            weiBoCount = divMessage.find('span').getText()
-            weiBoCount = (weiBoCount.split('[')[1]).replace(']', '')
 
             aa = divMessage.find_all('a')
             for a in aa:
@@ -371,7 +366,10 @@ class WeiboLogin():
                 id_url = self.id_url + cur_node  # 用于访问用户首页
                 print("cur_node {}".format(cur_node))
 
-                self.browser.get(id_url)  # 访问用户首页
+                self.browser.get(id_url)  # 访问用户首页，可以在这里拿到数据的数据
+
+
+
 
 
                 # print("当前页面的标题 {}".format(self.browser.title))
@@ -383,7 +381,12 @@ class WeiboLogin():
                 # 使用BeautifulSoup解析网页的HTML
                 soup = BeautifulSoup(self.browser.page_source, 'lxml')
 
+
                 print("-->当前用户姓名：",self.id2name[cur_node])
+
+                cur_user_info = UserInfo()
+                self.getUserInfo(soup,cur_node,cur_user_info)
+                break
                 # 获取uid
                 uid = soup.find('td', attrs={'valign': 'top'})
                 uid = uid.a['href']
@@ -391,10 +394,6 @@ class WeiboLogin():
                 self.uid = uid
 
 
-                # 获取个人信息
-                divMessage = soup.find('div', attrs={'class': 'tip2'})
-                weiBoCount = divMessage.find('span').getText()
-                weiBoCount = (weiBoCount.split('[')[1]).replace(']', '')  # 微博数量
 
                 # 获取粉丝/关注列表
                 aa = divMessage.find_all('a')
@@ -431,6 +430,87 @@ class WeiboLogin():
                 # 爬到第三层时停止
                 if layer == 3:
                     break
+
+    # 获取用户信息
+    def getUserInfo(self,soup,cur_id,user_info):
+        '''
+        :param soup:    传入的soup
+        :param cur_id:  当前用户的id
+        :param user_info: UserInfo对象
+        :return:
+        '''
+        # 获取uid
+        uid = soup.find("td",attrs={'valign': 'top'})
+        uid = uid.a['href']
+        uid = uid.split('/')[1]
+
+
+
+        # 获取微博数量
+        divMessage = soup.find('div', attrs={'class': 'tip2'})
+        weiBoCount = divMessage.find('span').getText()
+        weiBoCount = (weiBoCount.split('[')[1]).replace(']', '')
+
+        # 获取关注数和粉丝数
+        a = divMessage.find_all('a')[:2]
+        followCount = (a[0].getText().split('[')[1]).replace(']', '')
+        fansCount = (a[1].getText().split('[')[1]).replace(']', '')
+
+        user_info.user_id = cur_id
+        user_info.user_uid = uid
+        user_info.tweets_num = weiBoCount
+        user_info.followers_num = followCount
+        user_info.fans_num = fansCount
+
+        # user_info.userPrint()
+        # 获取完成后进入资料页
+        detailInfo_url = "/{}/info".format(uid)
+        self.browser.get(self.id_url+detailInfo_url)
+
+        WebDriverWait(self.browser,self.timeout).until(
+            EC.title_is("{}的资料".format(self.id2name[cur_id]))
+        )
+        html_doc = self.browser.page_source
+        new_html = html_doc.replace("<br>","")
+        soup_deatil = BeautifulSoup(new_html,'lxml')
+        body = soup_deatil.find('body')
+        # print(body)
+        tip_element = body.find_all_next(name='div',attrs={"class":"c"})
+        for i, element in enumerate(tip_element):
+            # print(i,element)
+            # 获取会员等级等信息
+            if i == 2:
+                result = re.findall(r'会员等级：([0-9]+)级',element.getText())
+                user_info.vip_level = result[0] if len(result) > 0 else 0
+                # print("会员等级：{}".format(user_info.vip_level))
+            elif i == 3:    # 获取昵称，性别，地区，生日
+                nickname = re.findall(r'昵称.*?(?=认证)',element.getText())
+                sex_str  = re.findall(r'性别.*?(?=地区)',element.getText())
+                user_info.nick_name =nickname[0][3:]
+                user_info.gender =sex_str[0][3:]
+                # print("昵称：{} 性别：{}".format(user_info.nick_name,user_info.gender))
+                # print(element.getText())
+                area =  re.findall(r'地区.*?(?=生日)',element.getText())
+                area_split = re.split(r"[: ]",area[0])
+                # print(area_split)
+                if len(area_split) == 3:
+                    user_info.province = area_split[1]
+                    user_info.city = area_split[2]
+                birthday_str = re.findall(r'生日.*?(?=认证信息)',element.getText())
+                label = re.findall(r'标签.*',element.getText())
+                label_list =re.split(r"[: \xa0]",label[0])
+                if len(label_list) == 5:
+                    user_info.label = " ".join(label_list[1:-1])
+                elif len(label_list) > 1 and len(label_list) <5:
+                    user_info.label = " ".join(label_list[1:])
+
+            elif i ==5:
+                # print("这里是第5个索引")
+                # print(element.getText())
+                personal_url = re.findall(r'手机版.*?(?=[他|她|我]的相册)',element.getText())
+                user_info.person_url = personal_url[0][4:]
+        user_info.userPrint()
+
 
     def getFollowAndFansUrl(self, cur_weibo_user,flag):
         '''

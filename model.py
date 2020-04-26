@@ -17,6 +17,28 @@ class UserInfo:
        self.person_url = "" # 用户首页链接
        self.crwal_time = ""
 
+    def getDict(self):
+        userinfo_dict = {}
+        userinfo_dict['_id'] = self.user_id
+        userinfo_dict['user_uid'] = self.user_uid
+        userinfo_dict['nick_name'] = self.nick_name
+        userinfo_dict['gender'] = self.gender
+        userinfo_dict['province'] = self.province
+        userinfo_dict['city'] = self.city
+        userinfo_dict['tweets_num'] = self.tweets_num
+        userinfo_dict['fans_num'] = self.fans_num
+        userinfo_dict['followers_num'] = self.followers_num
+        userinfo_dict['sex_orientation'] = self.sex_orientation
+        userinfo_dict['sentiment'] = self.sentiment
+        userinfo_dict['vip_level'] = self.vip_level
+        userinfo_dict['label'] = self.label
+        userinfo_dict['person_url'] = self.person_url
+        return userinfo_dict
+
+    def userPrint(self):
+        user_info = self.getDict()
+        for key in user_info.keys():
+            print(key,user_info[key])
 class WeiboData:
     def __init__(self):
         self.weibo_id = ""
