@@ -386,8 +386,8 @@ class WeiboLogin():
 
                 cur_user_info = UserInfo()
                 self.getUserInfo(soup,cur_node,cur_user_info)
-                break
-                # 获取uid
+                # break
+                # 获取ui  d
                 uid = soup.find('td', attrs={'valign': 'top'})
                 uid = uid.a['href']
                 uid = uid.split('/')[1]
@@ -396,6 +396,7 @@ class WeiboLogin():
 
 
                 # 获取粉丝/关注列表
+                divMessage = soup.find('div', attrs={'class': 'tip2'})
                 aa = divMessage.find_all('a')
 
                 # 获取节点信息结束，获取其关注或粉丝
@@ -428,7 +429,7 @@ class WeiboLogin():
                     layer += 1
                     last = tail
                 # 爬到第三层时停止
-                if layer == 3:
+                if layer == 2:
                     break
 
     # 获取用户信息
@@ -476,39 +477,75 @@ class WeiboLogin():
         body = soup_deatil.find('body')
         # print(body)
         tip_element = body.find_all_next(name='div',attrs={"class":"c"})
-        for i, element in enumerate(tip_element):
-            # print(i,element)
-            # 获取会员等级等信息
-            if i == 2:
-                result = re.findall(r'会员等级：([0-9]+)级',element.getText())
-                user_info.vip_level = result[0] if len(result) > 0 else 0
-                # print("会员等级：{}".format(user_info.vip_level))
-            elif i == 3:    # 获取昵称，性别，地区，生日
-                nickname = re.findall(r'昵称.*?(?=认证)',element.getText())
-                sex_str  = re.findall(r'性别.*?(?=地区)',element.getText())
-                user_info.nick_name =nickname[0][3:]
-                user_info.gender =sex_str[0][3:]
-                # print("昵称：{} 性别：{}".format(user_info.nick_name,user_info.gender))
-                # print(element.getText())
-                area =  re.findall(r'地区.*?(?=生日)',element.getText())
-                area_split = re.split(r"[: ]",area[0])
-                # print(area_split)
-                if len(area_split) == 3:
-                    user_info.province = area_split[1]
-                    user_info.city = area_split[2]
-                birthday_str = re.findall(r'生日.*?(?=认证信息)',element.getText())
-                label = re.findall(r'标签.*',element.getText())
-                label_list =re.split(r"[: \xa0]",label[0])
-                if len(label_list) == 5:
-                    user_info.label = " ".join(label_list[1:-1])
-                elif len(label_list) > 1 and len(label_list) <5:
-                    user_info.label = " ".join(label_list[1:])
+        print("fuck you")
+        print(str(tip_element))
+        result = re.findall(r'会员等级：([0-9]+)级', str(tip_element))
+        user_info.vip_level = result[0] if len(result) > 0 else 0
+        nickname = re.findall(r'昵称.*?(?=[认证|性别])', str(tip_element))
+        sex_str = re.findall(r'性别.*?(?=地区)', str(tip_element))
+        user_info.nick_name = nickname[0][3:]
+        user_info.gender = sex_str[0][3:]
+        area = re.findall(r'地区.*?(?=[生日|简介]|$)', str(tip_element))
+        print(area)
+        area_split = re.split(r"[: ]", area[0])
+        print(area_split)
+        # print(area_split)
+        if len(area_split) == 3:
+            user_info.province = area_split[1]
+            user_info.city = area_split[2]
+        elif len(area_split) == 2:
+            user_info.province = area_split[1]
+        label = re.findall(r'标签.*', str(tip_element))
+        print('label', label)
+        if len(label) > 1:
+            label_list = re.split(r"[: \xa0]", label[0])
+            if len(label_list) == 5:
+                user_info.label = " ".join(label_list[1:-1])
+            elif len(label_list) > 1 and len(label_list) < 5:
+                user_info.label = " ".join(label_list[1:])
 
-            elif i ==5:
-                # print("这里是第5个索引")
-                # print(element.getText())
-                personal_url = re.findall(r'手机版.*?(?=[他|她|我]的相册)',element.getText())
-                user_info.person_url = personal_url[0][4:]
+        personal_url = re.findall(r'手机版.*?(?=[他|她|我]的相册)', str(tip_element))
+        user_info.person_url = personal_url[0][4:]
+        #
+        # for i, element in enumerate(tip_element):
+        #     # print(i,element)
+        #     # 获取会员等级等信息
+        #     if i == 2:
+        #         result = re.findall(r'会员等级：([0-9]+)级',element.getText())
+        #         user_info.vip_level = result[0] if len(result) > 0 else 0
+        #         # print("会员等级：{}".format(user_info.vip_level))
+        #     elif i == 3:    # 获取昵称，性别，地区，生日
+        #         nickname = re.findall(r'昵称.*?(?=[认证|性别])',element.getText())
+        #         sex_str  = re.findall(r'性别.*?(?=地区)',element.getText())
+        #         user_info.nick_name =nickname[0][3:]
+        #         user_info.gender =sex_str[0][3:]
+        #         # print("昵称：{} 性别：{}".format(user_info.nick_name,user_info.gender))
+        #         print(element.getText())
+        #         area =  re.findall(r'地区.*?(?=[生日|简介]|$)',element.getText())
+        #         print(area)
+        #         area_split = re.split(r"[: ]",area[0])
+        #         print(area_split)
+        #         # print(area_split)
+        #         if len(area_split) == 3:
+        #             user_info.province = area_split[1]
+        #             user_info.city = area_split[2]
+        #         elif len(area_split) == 2:
+        #             user_info.province = area_split[1]
+        #         birthday_str = re.findall(r'生日.*?(?=认证信息)',element.getText())
+        #         label = re.findall(r'标签.*',element.getText())
+        #         print('label',label)
+        #         if len(label) > 1:
+        #             label_list =re.split(r"[: \xa0]",label[0])
+        #             if len(label_list) == 5:
+        #                 user_info.label = " ".join(label_list[1:-1])
+        #             elif len(label_list) > 1 and len(label_list) <5:
+        #                 user_info.label = " ".join(label_list[1:])
+        #
+        #     elif i ==5:
+        #         print("这里是第5个索引")
+        #         print(element.getText())
+        #         personal_url = re.findall(r'手机版.*?(?=[他|她|我]的相册)',element.getText())
+        #         user_info.person_url = personal_url[0][4:]
         user_info.userPrint()
 
 
