@@ -54,7 +54,18 @@ class WeiboData:
 
 class UserRealion:
     def __init__(self):
-        self.reation_id = "" # 用户关系id
+        self.reation = "" # 用户关系id
         self.son_id = ""
         self.father_id = ""
         self.crwal_time = ""
+
+    def getDict(self):
+        realtion = {}
+        realtion['reation'] = self.reation
+        realtion['son'] = self.son_id
+        realtion['father'] = self.father_id
+        return realtion
+
+    def realtionPrint(self):
+        realtion = self.getDict()
+        print(realtion)

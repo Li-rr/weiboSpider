@@ -571,6 +571,7 @@ class WeiboLogin():
 
                 # 获取id，注：不是uid
                 for i , temp_element in enumerate(need_content):
+                    user_realtion = UserRealion()
                     if "Tag" in str(type(temp_element)):
                         if i == 0:
                             userName = temp_element.getText()
@@ -579,7 +580,15 @@ class WeiboLogin():
                             self.id2name[user_id] = userName
                             # print("姓名：{} id：{} 姓名长度：{}".format(userName,user_id,len(userName)))
                             user_id_list.append(user_id)
+
                             count += 1
+                            user_realtion.reation = flag
+                            if flag == "关注":
+                                user_realtion.father_id = user_id
+                                user_realtion.son_id = cur_weibo_user
+                            elif flag == "粉丝":
+                                user_realtion.father_id = cur_weibo_user
+                                user_realtion.son_id = user_id
                 # break
             # print("页码：{} 的粉丝数量：{}".format(page_index,count))
             # break
