@@ -26,12 +26,12 @@
 | tweets_num      | 微博发表数                      |
 | fans_num        | 粉丝数                          |
 | followers_num   | 关注数                          |
-| sex_orientation | 性取向                          |
-| sentiment       | 感情状况                        |
-| vip_level       | 会议等级                        |
+| sex_orientation | 性取向（未使用）                |
+| sentiment       | 感情状况（未使用）                      |
+| vip_level       | 会员等级                        |
 | label           | 标签                            |
 | person_url      | 用户首页链接                    |
-| crawl_time      | 抓取时间                        |
+| crawl_time      | 抓取时间（未使用）                        |
 
 #### 微博数据
 
@@ -46,7 +46,7 @@
 | like_num     | 点赞数                   |
 | tool         | 发布微博的工具           |
 | origin_weibo | 原始微博，转发的微博才有 |
-| crawl_time   | 抓取时间戳               |
+| crawl_time   | 抓取时间戳 （未使用）              |
 
 #### 用户关系数据
 
@@ -55,7 +55,7 @@
 | _id         | 用户关系id       |
 | fan_id      | 关注者的用户id   |
 | follower_id | 被关注者的用户id |
-| crawl_time  | 抓取时间         |
+| crawl_time  | 抓取时间（未使用）         |
 
 
 
