@@ -366,19 +366,26 @@ class WeiboLogin():
                 cur_node = crawl_queue.get()    # 获取节点，获取该节点的信息
                 id_url = self.id_url + cur_node  # 用于访问用户首页
                 print("cur_node {}".format(cur_node))
-
-                self.browser.get(id_url)  # 访问用户首页，可以在这里拿到数据的数据
-
-
-
-
-
-                # print("当前页面的标题 {}".format(self.browser.title))
                 expect_title = "{}的微博".format(self.id2name[cur_node])
                 # print("期望页面标题：",expect_title)
-                WebDriverWait(self.browser, self.timeout).until(
-                    EC.title_is(expect_title)  # 这里可以修改成列表存储的形式
-                )
+                try:
+                    self.browser.get(id_url)  # 访问用户首页，可以在这里拿到数据的数据
+                    WebDriverWait(self.browser, self.timeout).until(
+                        EC.title_is(expect_title)  # 这里可以修改成列表存储的形式
+                    )
+                except Exception as e:
+                    print("页面超时，开始重传")
+                    WebDriverWait(self.browser, self.timeout).until(
+                        EC.title_is(expect_title)  # 这里可以修改成列表存储的形式
+                    )
+                    print("重传失败")
+
+                # print("当前页面的标题 {}".format(self.browser.title))
+
+
+                # WebDriverWait(self.browser, self.timeout).until(
+                #     EC.title_is(expect_title)  # 这里可以修改成列表存储的形式
+                # )
                 # 使用BeautifulSoup解析网页的HTML
                 soup = BeautifulSoup(self.browser.page_source, 'lxml')
 
@@ -467,11 +474,20 @@ class WeiboLogin():
         # user_info.userPrint()
         # 获取完成后进入资料页
         detailInfo_url = "/{}/info".format(uid)
-        self.browser.get(self.id_url+detailInfo_url)
+        try:
+            self.browser.get(self.id_url+detailInfo_url)
 
-        WebDriverWait(self.browser,self.timeout).until(
-            EC.title_is("{}的资料".format(self.id2name[cur_id]))
-        )
+            WebDriverWait(self.browser,self.timeout).until(
+                EC.title_is("{}的资料".format(self.id2name[cur_id]))
+            )
+        except Exception as e:
+            print("这里是getUserInfo函数，请求超时，开始重传")
+            self.browser.get(self.id_url+detailInfo_url)
+
+            WebDriverWait(self.browser,self.timeout).until(
+                EC.title_is("{}的资料".format(self.id2name[cur_id]))
+            )
+
         html_doc = self.browser.page_source
         new_html = html_doc.replace("<br>","")
         soup_deatil = BeautifulSoup(new_html,'lxml')
@@ -483,8 +499,10 @@ class WeiboLogin():
         result = re.findall(r'会员等级：([0-9]+)级', str(tip_element))
         user_info.vip_level = result[0] if len(result) > 0 else 0
         nickname = re.findall(r'昵称.*?(?=[认证|性别])', str(tip_element))
+
         sex_str = re.findall(r'性别.*?(?=地区)', str(tip_element))
-        user_info.nick_name = nickname[0][3:]
+
+        user_info.nick_name = nickname[0][3:] if len(nickname) > 0  else "" # 加判断
         user_info.gender = sex_str[0][3:]
         area = re.findall(r'地区.*?(?=[生日|简介]|$)', str(tip_element))
         print(area)
@@ -519,17 +537,33 @@ class WeiboLogin():
         :return: 返回由用户id获取的列表
         '''
         if flag == "关注":
-            self.browser.get(self.follow_url)  # 打开follow页面
             expect_title = "{}关注的人".format(self.id2name[cur_weibo_user])
-            WebDriverWait(self.browser, self.timeout).until(
-                EC.title_is(expect_title)
-            )
+            try:
+                self.browser.get(self.follow_url)  # 打开follow页面
+
+                WebDriverWait(self.browser, self.timeout).until(
+                    EC.title_is(expect_title)
+                )
+            except Exception as e:
+                print("这里getFloowAndFansUrl函数，请求超时，开始重传")
+                self.browser.get(self.follow_url)   #打开follow页面
+                WebDriverWait(self.browser, self.timeout).until(
+                    EC.title_is(expect_title)
+                )
+
         elif flag == "粉丝":
-            self.browser.get(self.fans_url)  # 打开fans页面
             expect_title = "{}的粉丝".format(self.id2name[cur_weibo_user])
-            WebDriverWait(self.browser, self.timeout).until(
-                EC.title_is(expect_title)
-            )
+            try:
+                self.browser.get(self.fans_url)  # 打开fans页面
+
+                WebDriverWait(self.browser, self.timeout).until(
+                    EC.title_is(expect_title)
+                )
+            except Exception as e:
+                self.browser.get(self.fans_url)
+                WebDriverWait(self.browser, self.timeout).until(
+                    EC.title_is(expect_title)
+                )
         soup = BeautifulSoup(self.browser.page_source, 'lxml')
 
         # 获取页码，这里需要考虑没有页码的情况
