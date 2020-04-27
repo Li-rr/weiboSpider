@@ -67,6 +67,11 @@ class WeiboLogin():
         self.id2name['7325110967'] = "用户7325110967"
         self.id2name['6567547334'] = '用户6567547334'
         self.db_weibo, self.conn = connDB()  # 获取数据库连接与weibo数据库
+
+        self.crawl_queue = queue.Queue()
+        self.crawl_visited = set()
+
+
         print("初始化完成")
 
     def open(self):
@@ -350,8 +355,10 @@ class WeiboLogin():
         # 从开始节点开始遍历
         for seed in self.seeds:
 
-            crawl_queue = queue.Queue()  # 待访问队列
-            crawl_visited = set()  # 已访问列表
+            # crawl_queue = queue.Queue()  # 待访问队列
+            # crawl_visited = set()  # 已访问列表
+            self.crawl_queue.queue.clear()
+            self.crawl_visited.clear()
 
             # 用于判断层数
             last = seed
@@ -359,11 +366,11 @@ class WeiboLogin():
             layer = 0
 
             # 种子入队
-            crawl_queue.put(seed)
+            self.crawl_queue.put(seed)
 
-            while not crawl_queue.empty():
+            while not self.crawl_queue.empty():
 
-                cur_node = crawl_queue.get()    # 获取节点，获取该节点的信息
+                cur_node = self.crawl_queue.get()    # 获取节点，获取该节点的信息
                 id_url = self.id_url + cur_node  # 用于访问用户首页
                 print("cur_node {}".format(cur_node))
                 expect_title = "{}的微博".format(self.id2name[cur_node])
@@ -395,7 +402,7 @@ class WeiboLogin():
                 cur_user_info = UserInfo()
                 self.getUserInfo(soup,cur_node,cur_user_info)
                 # break
-                # 获取ui  d
+                # 获取uid
                 uid = soup.find('td', attrs={'valign': 'top'})
                 uid = uid.a['href']
                 uid = uid.split('/')[1]
@@ -427,9 +434,9 @@ class WeiboLogin():
 
                 # 节点入队：
                 for cur_user in user_id_list:
-                    if cur_user not in crawl_visited:
-                        crawl_visited.add(cur_user)
-                        crawl_queue.put(cur_user)   # 入队
+                    if cur_user not in self.crawl_visited:
+                        self.crawl_visited.add(cur_user)
+                        self.crawl_queue.put(cur_user)   # 入队
                         tail = cur_user # 当前层最后一个入队的元素
 
                 # 如果当前层最后一个入队的元素出队，则进入下一层
